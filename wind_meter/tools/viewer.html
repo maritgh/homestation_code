@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wind meter</title>
+<style>
+  body { font: 16px system-ui, sans-serif; max-width: 850px; margin: 40px auto; padding: 0 20px; color: #18353c; background: #f4f8f9; }
+  h1 { margin-bottom: 8px; } #status { padding: 12px; background: #e0edf0; border-radius: 8px; }
+  #cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+  article { padding: 20px; background: white; border-radius: 12px; border: 1px solid #dce6e8; }
+  article span { display: block; font-size: 28px; margin-top: 8px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; background: white; } td { padding: 10px 14px; border-bottom: 1px solid #e0e8ea; }
+  td:last-child { text-align: right; } .note { color: #526a70; line-height: 1.6; }
+</style>
+<h1>Wind meter</h1>
+<p class="note">Live measurements from your ESP32-S3, updated every half second.</p>
+<p id="status" role="status">Waiting for ESP32 serial data…</p>
+<div id="cards">
+  <article>Wind speed<span id="speed">—</span></article>
+  <article>Direction<span id="direction">—</span></article>
+  <article>60-second median<span id="median">—</span></article>
+  <article>5-minute gust<span id="gust">—</span></article>
+</div>
+<table aria-label="Sensor details"><tbody id="details"></tbody></table>
+<p class="note">One HX711 is enough to show its raw counts, zero offset and calibrated force. Wind speed, direction and wind statistics require both sensors. Each sensor zeros independently when first connected; keep it unloaded. Temperature, humidity and pressure are configured constants. Calibrate the load cells and validate wind readings for your hardware.</p>
+<script>
+const format = (value, digits = 2) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+const measurement = (value, unit, digits = 2) => typeof value === 'number' && Number.isFinite(value) ? format(value, digits) + ' ' + unit : '—';
+const fields = [
+  ['North/south force', 'force_ns_n', 'N', 5], ['East/west force', 'force_ew_n', 'N', 5],
+  ['60-second mean direction', 'mean_direction_60s_deg', '°', 1],
+  ['NS raw reading', 'raw_ns', 'counts', 0], ['EW raw reading', 'raw_ew', 'counts', 0],
+  ['NS zero offset', 'offset_ns', 'counts', 0], ['EW zero offset', 'offset_ew', 'counts', 0],
+  ['Configured temperature', 'temperature_c', '°C', 2], ['Configured pressure', 'pressure_hpa', 'hPa', 2],
+  ['Configured humidity', 'humidity_percent', '%', 1], ['Uptime', 'uptime_s', 'seconds', 1]
+];
+async function update() {
+  try {
+    const response = await fetch('/api/data', {cache: 'no-store'});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const state = await response.json();
+    document.getElementById('status').textContent = state.connected ? state.message :
+      (state.message === 'Receiving sensor data' ? 'No recent measurements' : state.message) +
+      (state.age_s === null ? '' : ' — last measurement ' + format(state.age_s, 0) + ' seconds ago');
+    const data = state.data;
+    for (const [id, key] of [['speed', 'wind_speed_kmh'], ['median', 'median_speed_60s_kmh'], ['gust', 'gust_5min_kmh']])
+      document.getElementById(id).textContent = state.connected ? measurement(data[key], 'km/h') : '—';
+    document.getElementById('direction').textContent = state.connected && typeof data.wind_direction_deg === 'number' ? format(data.wind_direction_deg, 1) + '° ' + (data.wind_cardinal || '') : '—';
+    const rows = fields.map(([label, key, unit, digits]) => {
+      const row = document.createElement('tr');
+      for (const text of [label, state.connected ? measurement(data[key], unit, digits) : '—']) {
+        const cell = document.createElement('td'); cell.textContent = text; row.append(cell);
+      }
+      return row;
+    });
+    document.getElementById('details').replaceChildren(...rows);
+  } catch (error) {
+    document.getElementById('status').textContent = 'Cannot reach local viewer: ' + error.message;
+    for (const id of ['speed', 'direction', 'median', 'gust']) document.getElementById(id).textContent = '—';
+    document.getElementById('details').replaceChildren();
+  } finally { setTimeout(update, 500); }
+}
+update();
+</script>
+</html>
