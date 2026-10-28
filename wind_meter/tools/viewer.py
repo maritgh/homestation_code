@@ -51,7 +51,7 @@ class State:
                     self.message = "Receiving sensor data"
                 else:
                     labels = {"ready": "connected", "zeroing": "zeroing; keep unloaded",
-                              "disconnected": "not connected / not ready"}
+                              "disconnected": "no measurement ready (check configured GPIOs if persistent)"}
                     self.message = f"NS: {labels[states[0]]}; EW: {labels[states[1]]}. Wind calculations need both sensors."
 
     def snapshot(self):

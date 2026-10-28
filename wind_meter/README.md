@@ -12,16 +12,16 @@ Defaults for your **ESP32-S3**:
 
 | HX711 signal | ESP32-S3 connection |
 | --- | --- |
-| North/south DT / DOUT | GPIO 4 |
-| North/south SCK / CLK | GPIO 5 |
-| East/west DT / DOUT | GPIO 6 |
-| East/west SCK / CLK | GPIO 7 |
+| North/south DT / DOUT | GPIO 5 |
+| North/south SCK / CLK | GPIO 6 |
+| East/west DT / DOUT | GPIO 7 |
+| East/west SCK / CLK | GPIO 8 |
 | Both GND | GND |
 | Both VCC | 3.3 V (for modules supporting 3.3 V supply) |
 
 Use HX711 modules with 3.3 V logic; ESP32 GPIOs must not receive 5 V. Connect each
 load cell to its HX711 according to the module/load-cell pinout. Wire colors are
-not universal. Check that GPIOs 4–7 are exposed and unused on your particular board.
+not universal. Check that GPIOs 5–8 are exposed and unused on your particular board.
 The copied Arduino pins 26/23/19/18 are unsuitable for this ESP32-S3 setup.
 
 Plug the board's **native USB** connector into your computer. The firmware uses
@@ -44,6 +44,9 @@ Under **Wind meter**, adjust pins, load-cell calibration, circular plate diamete
 and air temperature/pressure/humidity. Defaults preserve the copied sketch's
 calibration and environmental values; they are not calibrated for new load cells.
 Calibration is signed raw counts per gram. The default plate diameter is 80 mm.
+Existing projects retain their pin settings in `sdkconfig`: changing defaults in
+`main/Kconfig.projbuild` does not override them. Check the four GPIO values in
+`idf.py menuconfig` before building and flashing.
 
 Find your port (macOS: `ls /dev/cu.*`; Windows: a `COM` port), then flash:
 
@@ -76,7 +79,7 @@ From this project folder:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r tools/requirements.txt
-python tools/viewer.py --port /dev/cu.usbmodem3101
+python tools/viewer.py --port /dev/tty.usbmodem101
 ```
 
 Open **http://localhost:8086**. Leave the viewer running; press Ctrl-C to stop it.

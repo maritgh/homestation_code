@@ -1,20 +1,16 @@
 menu "Wind meter"
     config WIND_NS_DATA_GPIO
         int "North/south HX711 data GPIO"
-        default 26 if IDF_TARGET_ESP32
-        default 4
+        default 5
     config WIND_NS_CLOCK_GPIO
         int "North/south HX711 clock GPIO"
-        default 23 if IDF_TARGET_ESP32
-        default 5
+        default 6
     config WIND_EW_DATA_GPIO
         int "East/west HX711 data GPIO"
-        default 19 if IDF_TARGET_ESP32
-        default 6
+        default 7
     config WIND_EW_CLOCK_GPIO
         int "East/west HX711 clock GPIO"
-        default 18 if IDF_TARGET_ESP32
-        default 7
+        default 8
     config WIND_NS_CALIBRATION
         string "North/south calibration (raw counts per gram)"
         default "-708.900330"

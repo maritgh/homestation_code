@@ -169,6 +169,8 @@ void app_main(void)
     hx711_init(&ns);
     hx711_init(&ew);
     setvbuf(stdout, NULL, _IONBF, 0);
+    ESP_LOGI(TAG, "HX711 GPIOs: NS DOUT=%d SCK=%d; EW DOUT=%d SCK=%d",
+             (int)ns.data, (int)ns.clock, (int)ew.data, (int)ew.clock);
     ESP_LOGI(TAG, "Keep plate unloaded during startup tare");
     unsigned index = 0, gust_index = 0;
     int64_t last_gust = 0;
