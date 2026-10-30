@@ -1,0 +1,15 @@
+menu "Airco besturing"
+
+config AIRCO_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        SSID van het Wi-Fi-netwerk waarop de ESP32 moet aanmelden.
+
+config AIRCO_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+    help
+        Wachtwoord van het Wi-Fi-netwerk. Laat leeg voor een open netwerk.
+
+endmenu

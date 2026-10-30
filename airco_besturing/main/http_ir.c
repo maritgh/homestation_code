@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "driver/gpio.h"
@@ -11,6 +12,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "sdkconfig.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
@@ -22,9 +24,6 @@
 #define IR_TX_GPIO          GPIO_NUM_10
 #define RMT_RESOLUTION_HZ   1000000
 #define RX_SYMBOL_COUNT     512
-
-#define WIFI_SSID           "ons internet"
-#define WIFI_PASSWORD       "crossfit is leuk!"
 
 #define WIFI_CONNECTED_BIT  BIT0
 
@@ -81,6 +80,11 @@ static void wifi_event_handler(
 
 static void wifi_start(void)
 {
+    if (CONFIG_AIRCO_WIFI_SSID[0] == '\0') {
+        ESP_LOGE(TAG, "Stel de Wi-Fi-SSID in via idf.py menuconfig");
+        abort();
+    }
+
     wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -96,10 +100,13 @@ static void wifi_start(void)
         IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL));
 
     wifi_config_t wifi_config = {0};
-    strlcpy((char *)wifi_config.sta.ssid, WIFI_SSID,
-            sizeof(wifi_config.sta.ssid));
-    strlcpy((char *)wifi_config.sta.password, WIFI_PASSWORD,
-            sizeof(wifi_config.sta.password));
+    if (strlcpy((char *)wifi_config.sta.ssid, CONFIG_AIRCO_WIFI_SSID,
+                sizeof(wifi_config.sta.ssid)) >= sizeof(wifi_config.sta.ssid) ||
+        strlcpy((char *)wifi_config.sta.password, CONFIG_AIRCO_WIFI_PASSWORD,
+                sizeof(wifi_config.sta.password)) >= sizeof(wifi_config.sta.password)) {
+        ESP_LOGE(TAG, "De geconfigureerde Wi-Fi-gegevens zijn te lang");
+        abort();
+    }
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));

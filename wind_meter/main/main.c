@@ -15,12 +15,15 @@
 #define SAMPLE_MS 200
 #define HISTORY 300
 #define GUST_HISTORY 120
+#define TARE_READINGS 10
 #define PI 3.14159265358979323846f
 
 static const char *TAG = "wind_meter";
 static portMUX_TYPE clock_lock = portMUX_INITIALIZER_UNLOCKED;
+
 typedef struct {
-    gpio_num_t data, clock;
+    gpio_num_t data;
+    gpio_num_t clock;
     int32_t offset;
     float calibration;
     int64_t tare_sum;
@@ -28,7 +31,13 @@ typedef struct {
     int32_t raw;
     bool ready;
 } hx711_t;
-typedef struct { int64_t time; float speed, direction; } sample_t;
+
+typedef struct {
+    int64_t time;
+    float speed;
+    float direction;
+} sample_t;
+
 static sample_t samples[HISTORY];
 static sample_t gusts[GUST_HISTORY];
 static float scratch[HISTORY];
@@ -80,18 +89,22 @@ static bool hx711_read(hx711_t *sensor, int32_t *result)
 static void sensor_update(hx711_t *sensor)
 {
     sensor->ready = false;
-    if (gpio_get_level(sensor->data)) return;
+    if (gpio_get_level(sensor->data)) {
+        return;
+    }
+
     sensor->ready = hx711_read(sensor, &sensor->raw);
-    if (sensor->ready && sensor->tare_count < 10) {
+    if (sensor->ready && sensor->tare_count < TARE_READINGS) {
         sensor->tare_sum += sensor->raw;
-        if (++sensor->tare_count == 10)
-            sensor->offset = sensor->tare_sum / 10;
+        if (++sensor->tare_count == TARE_READINGS) {
+            sensor->offset = sensor->tare_sum / TARE_READINGS;
+        }
     }
 }
 
 static bool force_available(const hx711_t *sensor)
 {
-    return sensor->ready && sensor->tare_count == 10;
+    return sensor->ready && sensor->tare_count == TARE_READINGS;
 }
 
 static float sensor_force(const hx711_t *sensor)
@@ -101,17 +114,26 @@ static float sensor_force(const hx711_t *sensor)
 
 static void print_sensor(const char *axis, const hx711_t *sensor)
 {
-    const char *state = !sensor->ready ? "disconnected" :
-        sensor->tare_count < 10 ? "zeroing" : "ready";
+    const char *state = !sensor->ready ? "disconnected"
+        : sensor->tare_count < TARE_READINGS ? "zeroing" : "ready";
     printf(",\"%s_state\":\"%s\",\"raw_%s\":", axis, state, axis);
-    if (sensor->ready) printf("%ld", (long)sensor->raw);
-    else printf("null");
+    if (sensor->ready) {
+        printf("%ld", (long)sensor->raw);
+    } else {
+        printf("null");
+    }
     printf(",\"offset_%s\":", axis);
-    if (sensor->tare_count == 10) printf("%ld", (long)sensor->offset);
-    else printf("null");
+    if (sensor->tare_count == TARE_READINGS) {
+        printf("%ld", (long)sensor->offset);
+    } else {
+        printf("null");
+    }
     printf(",\"force_%s_n\":", axis);
-    if (force_available(sensor)) printf("%.5f", sensor_force(sensor));
-    else printf("null");
+    if (force_available(sensor)) {
+        printf("%.5f", sensor_force(sensor));
+    } else {
+        printf("null");
+    }
 }
 
 static int compare_float(const void *a, const void *b)
@@ -123,8 +145,10 @@ static int compare_float(const void *a, const void *b)
 static float median(int start, int end)
 {
     int count = end - start;
-    return count % 2 ? scratch[start + count / 2]
-        : (scratch[start + count / 2 - 1] + scratch[start + count / 2]) / 2;
+    if (count % 2) {
+        return scratch[start + count / 2];
+    }
+    return (scratch[start + count / 2 - 1] + scratch[start + count / 2]) / 2;
 }
 
 static const char *cardinal(float direction)
@@ -172,7 +196,9 @@ void app_main(void)
     ESP_LOGI(TAG, "HX711 GPIOs: NS DOUT=%d SCK=%d; EW DOUT=%d SCK=%d",
              (int)ns.data, (int)ns.clock, (int)ew.data, (int)ew.clock);
     ESP_LOGI(TAG, "Keep plate unloaded during startup tare");
-    unsigned index = 0, gust_index = 0;
+    size_t sample_index = 0;
+    size_t sample_count = 0;
+    size_t gust_index = 0;
     int64_t last_gust = 0;
     while (true) {
         int64_t cycle_start = esp_timer_get_time();
@@ -188,10 +214,15 @@ void app_main(void)
             float speed = sqrtf(2 * hypotf(force_ns, force_ew) / area / density) * 3.6f;
             float direction = atan2f(force_ew, force_ns) * 180 / PI;
             if (direction < 0) direction += 360;
-            samples[index++ % HISTORY] = (sample_t){now, speed, direction};
+            samples[sample_index] = (sample_t){now, speed, direction};
+            sample_index = (sample_index + 1) % HISTORY;
+            if (sample_count < HISTORY) {
+                sample_count++;
+            }
+
             int count = 0;
             float sin_sum = 0, cos_sum = 0;
-            for (int i = 0; i < HISTORY; i++) {
+            for (size_t i = 0; i < sample_count; i++) {
                 if (samples[i].time && now - samples[i].time < 60000000) {
                     scratch[count++] = samples[i].speed;
                     sin_sum += sinf(samples[i].direction * PI / 180);
@@ -205,14 +236,15 @@ void app_main(void)
             if (now - last_gust >= 2500000) {
                 last_gust = now;
                 count = 0;
-                for (int i = 0; i < HISTORY; i++) {
+                for (size_t i = 0; i < sample_count; i++) {
                     if (samples[i].time && now - samples[i].time < 2500000)
                         scratch[count++] = samples[i].speed;
                 }
                 if (count >= 8) {
                     qsort(scratch, count, sizeof(float), compare_float);
-                    gusts[gust_index++ % GUST_HISTORY] =
+                    gusts[gust_index] =
                         (sample_t){now, median(count / 2, count - count / 8), 0};
+                    gust_index = (gust_index + 1) % GUST_HISTORY;
                 }
             }
             float gust = 0;

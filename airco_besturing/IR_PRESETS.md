@@ -1,5 +1,10 @@
 # IR-opnames overzetten als JSON
 
+Configureer eerst de Wi-Fi-gegevens van de ESP32 via `idf.py menuconfig`:
+open `Airco besturing`, stel `Wi-Fi SSID` en eventueel `Wi-Fi password` in
+en bouw daarna de firmware opnieuw. De instellingen worden lokaal in
+`sdkconfig` opgeslagen en staan niet in de broncode.
+
 Flash eerst de nieuwste firmware inclusief partitietabel op beide ESP's:
 
 ```sh

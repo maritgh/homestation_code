@@ -19,6 +19,7 @@
 #include "esp_netif.h"
 #include "esp_netif_ip_addr.h"
 #include "esp_wifi.h"
+#include "sdkconfig.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -35,10 +36,8 @@
 #define RMT_RESOLUTION_HZ   1000000
 #define RX_SYMBOL_COUNT     512
 
-#define WIFI_SSID           "ons internet"
-#define WIFI_PASSWORD       "crossfit is leuk!"
-
 #define WIFI_CONNECTED_BIT  BIT0
+#define MAX_FRAME_BYTES     (RX_SYMBOL_COUNT * sizeof(rmt_symbol_word_t))
 
 static const char *TAG = "ac_ir_http";
 
@@ -51,12 +50,10 @@ static httpd_handle_t server = NULL;
 static SemaphoreHandle_t frames_mutex;
 
 static rmt_symbol_word_t rx_symbols[RX_SYMBOL_COUNT];
-static rmt_symbol_word_t saved_frames[AC_PRESET_COUNT][RX_SYMBOL_COUNT];
+static rmt_symbol_word_t *saved_frames[AC_PRESET_COUNT];
 static size_t saved_counts[AC_PRESET_COUNT] = {0};
 
-/* Het nummer van de preset die op dat moment wordt opgenomen.
-   -1 betekent dat er geen opname actief is. */
-static volatile int learn_slot = -1;
+static int learn_slot = -1;
 
 
 /* Wordt aangeroepen wanneer een IR-opname klaar is. */
@@ -103,6 +100,11 @@ static void wifi_event_handler(
 /* Verbindt de ESP32 met je Wi-Fi-netwerk. */
 static void wifi_start(void)
 {
+    if (CONFIG_AIRCO_WIFI_SSID[0] == '\0') {
+        ESP_LOGE(TAG, "Stel de Wi-Fi-SSID in via idf.py menuconfig");
+        abort();
+    }
+
     wifi_event_group = xEventGroupCreate();
 
     if (wifi_event_group == NULL) {
@@ -134,17 +136,23 @@ static void wifi_start(void)
 
     wifi_config_t wifi_config = {0};
 
-    strlcpy(
+    if (strlcpy(
         (char *)wifi_config.sta.ssid,
-        WIFI_SSID,
+        CONFIG_AIRCO_WIFI_SSID,
         sizeof(wifi_config.sta.ssid)
-    );
+    ) >= sizeof(wifi_config.sta.ssid)) {
+        ESP_LOGE(TAG, "De geconfigureerde Wi-Fi-SSID is te lang");
+        abort();
+    }
 
-    strlcpy(
+    if (strlcpy(
         (char *)wifi_config.sta.password,
-        WIFI_PASSWORD,
+        CONFIG_AIRCO_WIFI_PASSWORD,
         sizeof(wifi_config.sta.password)
-    );
+    ) >= sizeof(wifi_config.sta.password)) {
+        ESP_LOGE(TAG, "Het geconfigureerde Wi-Fi-wachtwoord is te lang");
+        abort();
+    }
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
@@ -173,6 +181,22 @@ static int find_preset(const char *id)
     }
 
     return -1;
+}
+
+static void set_learn_slot(int slot)
+{
+    xSemaphoreTake(frames_mutex, portMAX_DELAY);
+    learn_slot = slot;
+    xSemaphoreGive(frames_mutex);
+}
+
+static int take_learn_slot(void)
+{
+    xSemaphoreTake(frames_mutex, portMAX_DELAY);
+    int slot = learn_slot;
+    learn_slot = -1;
+    xSemaphoreGive(frames_mutex);
+    return slot;
 }
 
 
@@ -211,18 +235,32 @@ static void load_saved_frames_from_partition(const char *partition)
     ESP_ERROR_CHECK(err);
 
     for (size_t i = 0; i < AC_PRESET_COUNT; i++) {
-        size_t bytes = sizeof(saved_frames[i]);
-
-        err = nvs_get_blob(
-            handle,
-            AC_PRESETS[i].nvs_key,
-            saved_frames[i],
-            &bytes
-        );
+        size_t bytes = 0;
+        err = nvs_get_blob(handle, AC_PRESETS[i].nvs_key, NULL, &bytes);
 
         if (err == ESP_OK &&
             bytes > 0 &&
+            bytes <= MAX_FRAME_BYTES &&
             bytes % sizeof(rmt_symbol_word_t) == 0) {
+            rmt_symbol_word_t *frame = malloc(bytes);
+            if (frame == NULL) {
+                ESP_LOGE(TAG, "Onvoldoende geheugen voor preset '%s'",
+                         AC_PRESETS[i].id);
+                continue;
+            }
+
+            size_t loaded_bytes = bytes;
+            err = nvs_get_blob(handle, AC_PRESETS[i].nvs_key, frame,
+                               &loaded_bytes);
+            if (err != ESP_OK || loaded_bytes != bytes) {
+                ESP_LOGW(TAG, "Preset '%s' kon niet volledig worden geladen",
+                         AC_PRESETS[i].id);
+                free(frame);
+                continue;
+            }
+
+            free(saved_frames[i]);
+            saved_frames[i] = frame;
             saved_counts[i] = bytes / sizeof(rmt_symbol_word_t);
 
             ESP_LOGI(
@@ -231,13 +269,15 @@ static void load_saved_frames_from_partition(const char *partition)
                 AC_PRESETS[i].id,
                 (unsigned)saved_counts[i]
             );
-        } else if (saved_counts[i] == 0) {
-
+        } else if (err == ESP_ERR_NVS_NOT_FOUND && saved_counts[i] == 0) {
             ESP_LOGI(
                 TAG,
                 "Preset '%s' is nog niet opgenomen",
                 AC_PRESETS[i].id
             );
+        } else if (err != ESP_ERR_NVS_NOT_FOUND) {
+            ESP_LOGW(TAG, "Preset '%s' heeft een ongeldige opname",
+                     AC_PRESETS[i].id);
         }
     }
 
@@ -256,36 +296,40 @@ static void save_frame(int slot, size_t count)
         return;
     }
 
-    xSemaphoreTake(frames_mutex, portMAX_DELAY);
+    rmt_symbol_word_t *frame = malloc(count * sizeof(*frame));
+    if (frame == NULL) {
+        ESP_LOGE(TAG, "Onvoldoende geheugen om preset '%s' op te slaan",
+                 AC_PRESETS[slot].id);
+        return;
+    }
 
-    memcpy(
-        saved_frames[slot],
-        rx_symbols,
-        count * sizeof(rmt_symbol_word_t)
-    );
+    memcpy(frame, rx_symbols, count * sizeof(*frame));
 
     /*
      * De IR-ontvanger geeft de IR-pulsen meestal geïnverteerd door.
      * Keer de niveaus om voordat we het signaal via de IR-led versturen.
      */
     for (size_t i = 0; i < count; i++) {
-        saved_frames[slot][i].level0 = !saved_frames[slot][i].level0;
-        saved_frames[slot][i].level1 = !saved_frames[slot][i].level1;
+        frame[i].level0 = !frame[i].level0;
+        frame[i].level1 = !frame[i].level1;
     }
 
+    xSemaphoreTake(frames_mutex, portMAX_DELAY);
     nvs_handle_t handle;
     ESP_ERROR_CHECK(nvs_open_from_partition("ir_frames", "ac_ir", NVS_READWRITE, &handle));
 
     ESP_ERROR_CHECK(nvs_set_blob(
         handle,
         AC_PRESETS[slot].nvs_key,
-        saved_frames[slot],
-        count * sizeof(rmt_symbol_word_t)
+        frame,
+        count * sizeof(*frame)
     ));
 
     ESP_ERROR_CHECK(nvs_commit(handle));
     nvs_close(handle);
 
+    free(saved_frames[slot]);
+    saved_frames[slot] = frame;
     saved_counts[slot] = count;
     xSemaphoreGive(frames_mutex);
 
@@ -321,7 +365,7 @@ static esp_err_t learn_handler(httpd_req_t *req)
         return ESP_OK;
     }
 
-    learn_slot = slot;
+    set_learn_slot(slot);
 
     char response[160];
 
@@ -445,8 +489,8 @@ static esp_err_t status_handler(httpd_req_t *req)
  */
 static esp_err_t export_presets_handler(httpd_req_t *req)
 {
-    unsigned char *raw = malloc(sizeof(saved_frames[0]));
-    char *encoded = malloc(4 * ((sizeof(saved_frames[0]) + 2) / 3) + 1);
+    unsigned char *raw = malloc(MAX_FRAME_BYTES);
+    char *encoded = malloc(4 * ((MAX_FRAME_BYTES + 2) / 3) + 1);
     if (raw == NULL || encoded == NULL) {
         free(raw);
         free(encoded);
@@ -461,7 +505,7 @@ static esp_err_t export_presets_handler(httpd_req_t *req)
     bool first = true;
     for (size_t slot = 0; slot < AC_PRESET_COUNT && err == ESP_OK; slot++) {
         size_t count = saved_counts[slot];
-        if (count == 0) {
+        if (count == 0 || saved_frames[slot] == NULL) {
             continue;
         }
         for (size_t i = 0; i < count; i++) {
@@ -472,7 +516,7 @@ static esp_err_t export_presets_handler(httpd_req_t *req)
         }
         size_t encoded_len;
         int result = mbedtls_base64_encode((unsigned char *)encoded,
-            4 * ((sizeof(saved_frames[0]) + 2) / 3) + 1,
+            4 * ((MAX_FRAME_BYTES + 2) / 3) + 1,
             &encoded_len, raw, count * 4);
         if (result != 0) {
             err = ESP_FAIL;
@@ -500,7 +544,7 @@ static esp_err_t import_preset_handler(httpd_req_t *req)
         return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Verstuur een preset per aanvraag (maximaal 4096 bytes)");
     }
     char *body = malloc(req->content_len + 1);
-    unsigned char *raw = malloc(sizeof(saved_frames[0]));
+    unsigned char *raw = malloc(MAX_FRAME_BYTES);
     if (body == NULL || raw == NULL) {
         free(body);
         free(raw);
@@ -533,9 +577,10 @@ static esp_err_t import_preset_handler(httpd_req_t *req)
         cJSON_IsNumber(carrier) && carrier->valuedouble == 38000 &&
         frame && frame->next == NULL && slot >= 0 && cJSON_IsString(frame);
     if (valid) {
-        valid = mbedtls_base64_decode(raw, sizeof(saved_frames[0]), &bytes,
+        valid = mbedtls_base64_decode(raw, MAX_FRAME_BYTES, &bytes,
             (const unsigned char *)frame->valuestring, strlen(frame->valuestring)) == 0 &&
-            bytes > 0 && bytes % 4 == 0;
+            bytes > 0 && bytes <= MAX_FRAME_BYTES &&
+            bytes % sizeof(rmt_symbol_word_t) == 0;
     }
     cJSON_Delete(root);
     free(body);
@@ -560,8 +605,10 @@ static esp_err_t import_preset_handler(httpd_req_t *req)
         nvs_close(handle);
     }
     if (err == ESP_OK) {
-        memcpy(saved_frames[slot], symbols, bytes);
-        saved_counts[slot] = bytes / 4;
+        free(saved_frames[slot]);
+        saved_frames[slot] = symbols;
+        saved_counts[slot] = bytes / sizeof(*symbols);
+        raw = NULL;
         learn_slot = -1;
     }
     xSemaphoreGive(frames_mutex);
@@ -734,8 +781,7 @@ void app_main(void)
              * Lees welke preset wordt opgenomen en zet de opname-instelling
              * daarna terug naar -1.
              */
-            int slot = learn_slot;
-            learn_slot = -1;
+            int slot = take_learn_slot();
 
             if (count > 0 &&
                 count <= RX_SYMBOL_COUNT &&
