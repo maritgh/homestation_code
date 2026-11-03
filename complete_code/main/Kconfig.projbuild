@@ -1,0 +1,44 @@
+menu "Homestation"
+
+    config WIFI_SSID
+        string "Wi-Fi SSID"
+        default "Iphone_van_marit"
+        help
+            SSID van het Wi-Fi-netwerk waarop de ESP32 moet aanmelden.
+
+    config WIFI_PASSWORD
+        string "Wi-Fi password"
+        default "hoi hoi hoi"
+        help
+            Wachtwoord van het Wi-Fi-netwerk. Laat leeg voor een open netwerk.
+
+    config WIND_NS_DATA_GPIO
+        int "North/south HX711 data GPIO"
+        default 5
+    config WIND_NS_CLOCK_GPIO
+        int "North/south HX711 clock GPIO"
+        default 6
+    config WIND_EW_DATA_GPIO
+        int "East/west HX711 data GPIO"
+        default 7
+    config WIND_EW_CLOCK_GPIO
+        int "East/west HX711 clock GPIO"
+        default 8
+    config WIND_NS_CALIBRATION
+        string "North/south calibration (raw counts per gram)"
+        default "-708.900330"
+    config WIND_EW_CALIBRATION
+        string "East/west calibration (raw counts per gram)"
+        default "699.668091"
+    config WIND_PLATE_DIAMETER_MM
+        int "Circular plate diameter in mm"
+        range 1 1000
+        default 80
+    config WIND_AIR_DENSITY
+        string "Air density in kg/m3"
+        default "1.225"
+        help
+            Reference density used to convert plate force to wind speed.
+            Adjust for local conditions along with the plate calibration.
+
+endmenu

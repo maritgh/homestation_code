@@ -1,0 +1,148 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Pagina-1" id="oF7kXisVHFF8hX0iyn7v">
+    <mxGraphModel dx="2011" dy="813" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="xsIy_yC7Nimv8extPcic-34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;dashed=1;fillColor=none;arcSize=5;" value="" vertex="1">
+          <mxGeometry height="480" width="730" x="-20" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-26" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1.002;exitY=0.344;exitDx=0;exitDy=0;" target="xsIy_yC7Nimv8extPcic-14">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="474" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-39" connectable="0" parent="xsIy_yC7Nimv8extPcic-26" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="I2C" vertex="1">
+          <mxGeometry relative="1" x="0.0806" y="3" as="geometry">
+            <mxPoint x="-2" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-27" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.01;exitY=0.652;exitDx=0;exitDy=0;" target="xsIy_yC7Nimv8extPcic-15" value="GPIO (RMT)">
+          <mxGeometry relative="1" x="-0.0239" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="474" y="339" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;container=1;verticalAlign=top;arcSize=5;fillColor=#fad9d5;strokeColor=#ae4132;" value="&lt;b&gt;&lt;font style=&quot;font-size: 13px;&quot;&gt;ESP32-S3&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;font style=&quot;font-size: 13px;&quot;&gt;(microcontroller)&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="340" width="224" x="250" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-9" parent="xsIy_yC7Nimv8extPcic-2" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#fad9d5;strokeColor=#ae4132;" value="Netwerkcommunicatie" vertex="1">
+          <mxGeometry height="53.93103448275861" width="164.44" x="29.78" y="63.31034482758619" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-7" parent="xsIy_yC7Nimv8extPcic-2" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#fad9d5;strokeColor=#ae4132;" value="Display aansturing" vertex="1">
+          <mxGeometry height="53.93103448275861" width="164.44" x="29.78" y="128.9655172413793" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-8" parent="xsIy_yC7Nimv8extPcic-2" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#fad9d5;strokeColor=#ae4132;" value="IR signalen verwerking" vertex="1">
+          <mxGeometry height="53.93103448275861" width="164.44" x="29.78" y="261.4482758620689" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-6" parent="xsIy_yC7Nimv8extPcic-2" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#fad9d5;strokeColor=#ae4132;" value="Sensor verwerking" vertex="1">
+          <mxGeometry height="53.93103448275861" width="164.44" x="29.78" y="194.62068965517238" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-20" edge="1" parent="xsIy_yC7Nimv8extPcic-2" style="endArrow=none;html=1;rounded=0;entryX=1.017;entryY=0.146;entryDx=0;entryDy=0;exitX=-0.006;exitY=0.155;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint y="50.90194357366782" as="sourcePoint" />
+            <mxPoint x="224" y="50.408713399586276" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-33" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="xsIy_yC7Nimv8extPcic-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#d0cee2;strokeColor=#56517e;" value="Voeding&lt;div&gt;(USB C 5V)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="302" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-22" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="225" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-36" connectable="0" parent="xsIy_yC7Nimv8extPcic-22" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="I2C" vertex="1">
+          <mxGeometry relative="1" x="0.0333" y="3" as="geometry">
+            <mxPoint x="-2" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;roundedPerimeter=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Omgevings tempratuur en luchtvochtigheid&lt;div&gt;(SHT45)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="10" y="195" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-23" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.003;entryY=0.528;entryDx=0;entryDy=0;" target="xsIy_yC7Nimv8extPcic-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Windsnelheid&lt;div&gt;(Loadcell + HX7111)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="10" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-24" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="xsIy_yC7Nimv8extPcic-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-37" connectable="0" parent="xsIy_yC7Nimv8extPcic-24" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1 Wire" vertex="1">
+          <mxGeometry relative="1" x="-0.1333" y="2" as="geometry">
+            <mxPoint x="7" y="2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Water tempratuur&lt;div&gt;(DS18B20)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="10" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-25" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.923;entryDx=0;entryDy=0;exitX=0.983;exitY=0.227;exitDx=0;exitDy=0;exitPerimeter=0;" target="xsIy_yC7Nimv8extPcic-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-38" connectable="0" parent="xsIy_yC7Nimv8extPcic-25" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="I2C" vertex="1">
+          <mxGeometry relative="1" x="0.0477" y="1" as="geometry">
+            <mxPoint x="-1" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Waterniveau&lt;div&gt;(VL53L4CD)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="10" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Display&lt;div&gt;(SH1106 driver)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="570" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-21" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.088;entryDx=0;entryDy=0;" target="xsIy_yC7Nimv8extPcic-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-35" connectable="0" parent="xsIy_yC7Nimv8extPcic-21" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GPIO (RMT)" vertex="1">
+          <mxGeometry relative="1" x="0.213" y="-1" as="geometry">
+            <mxPoint x="-11" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Afstandsbediening uitlezen&lt;div&gt;(VS1838B)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="10" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;" value="Home assistant&lt;div&gt;(Raspberry Pi 5)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;" value="Centrale server" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="Airco aansturing&lt;div&gt;(IR LED)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="570" y="308.55" as="geometry" />
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-30" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-18" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.59;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.445;entryY=0.997;entryDx=0;entryDy=0;dashed=1;" target="xsIy_yC7Nimv8extPcic-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="290" y="520" as="sourcePoint" />
+            <mxPoint x="350" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-40" connectable="0" parent="xsIy_yC7Nimv8extPcic-30" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTP/JSON" vertex="1">
+          <mxGeometry relative="1" x="0.3143" y="-1" as="geometry">
+            <mxPoint x="-21" y="22" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-31" edge="1" parent="1" source="xsIy_yC7Nimv8extPcic-2" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0.583;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.554;exitY=0.994;exitDx=0;exitDy=0;dashed=1;" target="xsIy_yC7Nimv8extPcic-19" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="370" y="330" as="sourcePoint" />
+            <mxPoint x="420" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsIy_yC7Nimv8extPcic-41" connectable="0" parent="xsIy_yC7Nimv8extPcic-31" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTP/HTTPS" vertex="1">
+          <mxGeometry relative="1" x="0.3915" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

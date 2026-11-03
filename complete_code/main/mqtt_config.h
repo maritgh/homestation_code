@@ -1,0 +1,9 @@
+#pragma once
+
+#define HOME_STATION_WIFI_SSID "Iphone_van_marit"
+#define HOME_STATION_WIFI_PASSWORD "hoi hoi hoi"
+
+#define HOME_STATION_MQTT_URI "mqtt://145.24.237.237:8883"
+#define HOME_STATION_ID "marit"
+#define HOME_STATION_API_KEY "4d7cca65692d62c4da3d8f8a19c19a1af7698b36f70f3cb36a2efea616d93ea6"
+#define HOME_STATION_PUBLISH_INTERVAL_MS 5000

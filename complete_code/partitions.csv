@@ -1,0 +1,6 @@
+# Name, Type, SubType, Offset, Size, Flags
+# 2 MiB flash: application and IR storage end at 0x200000.
+nvs, data, nvs, 0x9000, 0x6000,
+phy_init, data, phy, 0xf000, 0x1000,
+factory, app, factory, 0x10000, 0x1b0000,
+ir_frames, data, nvs, 0x1c0000, 0x40000,
