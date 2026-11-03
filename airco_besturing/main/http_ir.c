@@ -80,7 +80,7 @@ static void wifi_event_handler(
 
 static void wifi_start(void)
 {
-    if (CONFIG_AIRCO_WIFI_SSID[0] == '\0') {
+    if (CONFIG_WIFI_SSID[0] == '\0') {
         ESP_LOGE(TAG, "Stel de Wi-Fi-SSID in via idf.py menuconfig");
         abort();
     }
@@ -100,9 +100,9 @@ static void wifi_start(void)
         IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL));
 
     wifi_config_t wifi_config = {0};
-    if (strlcpy((char *)wifi_config.sta.ssid, CONFIG_AIRCO_WIFI_SSID,
+    if (strlcpy((char *)wifi_config.sta.ssid, CONFIG_WIFI_SSID,
                 sizeof(wifi_config.sta.ssid)) >= sizeof(wifi_config.sta.ssid) ||
-        strlcpy((char *)wifi_config.sta.password, CONFIG_AIRCO_WIFI_PASSWORD,
+        strlcpy((char *)wifi_config.sta.password, CONFIG_WIFI_PASSWORD,
                 sizeof(wifi_config.sta.password)) >= sizeof(wifi_config.sta.password)) {
         ESP_LOGE(TAG, "De geconfigureerde Wi-Fi-gegevens zijn te lang");
         abort();

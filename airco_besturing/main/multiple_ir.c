@@ -96,11 +96,10 @@ static void wifi_event_handler(
     }
 }
 
-
 /* Verbindt de ESP32 met je Wi-Fi-netwerk. */
 static void wifi_start(void)
 {
-    if (CONFIG_AIRCO_WIFI_SSID[0] == '\0') {
+    if (CONFIG_WIFI_SSID[0] == '\0') {
         ESP_LOGE(TAG, "Stel de Wi-Fi-SSID in via idf.py menuconfig");
         abort();
     }
@@ -138,7 +137,7 @@ static void wifi_start(void)
 
     if (strlcpy(
         (char *)wifi_config.sta.ssid,
-        CONFIG_AIRCO_WIFI_SSID,
+        CONFIG_WIFI_SSID,
         sizeof(wifi_config.sta.ssid)
     ) >= sizeof(wifi_config.sta.ssid)) {
         ESP_LOGE(TAG, "De geconfigureerde Wi-Fi-SSID is te lang");
@@ -147,7 +146,7 @@ static void wifi_start(void)
 
     if (strlcpy(
         (char *)wifi_config.sta.password,
-        CONFIG_AIRCO_WIFI_PASSWORD,
+        CONFIG_WIFI_PASSWORD,
         sizeof(wifi_config.sta.password)
     ) >= sizeof(wifi_config.sta.password)) {
         ESP_LOGE(TAG, "Het geconfigureerde Wi-Fi-wachtwoord is te lang");
