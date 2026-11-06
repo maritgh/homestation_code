@@ -1,72 +1,71 @@
 #include "display_ui.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "sensors.h"
+#include "wind.h"
 
+// #define DISPLAY_PIXEL_TEST 1
 #define SENSOR_REFRESH_INTERVAL_MS 200
-#define LABEL_ROW_HEIGHT 16
 
-static lv_obj_t *distance_label;
-static lv_obj_t *temperature_label;
-static lv_obj_t *humidity_label;
-static lv_obj_t *water_temperature_label;
+#if DISPLAY_PIXEL_TEST
+
+void display_ui_create(lv_display_t *display)
+{
+    lv_obj_t *screen = lv_display_get_screen_active(display);
+    lv_obj_clean(screen);
+    lv_obj_set_style_pad_all(screen, 0, 0);
+    lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
+    // The OLED flush callback inverts LVGL pixels, so black here lights every OLED pixel.
+    lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, LV_PART_MAIN);
+}
+
+#else
+
+static lv_obj_t *measurements_label;
 
 static void set_label_text(lv_obj_t *label, const char *text)
 {
-    // LVGL reallocates text and invalidates the label even when it is unchanged.
     if (strcmp(lv_label_get_text(label), text) != 0) {
         lv_label_set_text(label, text);
     }
 }
 
-static void set_float_label(lv_obj_t *label, const char *format, float value)
-{
-    char text[32];
-    snprintf(text, sizeof(text), format, (double)value);
-    set_label_text(label, text);
-}
-
 static void sensors_ui_cb(lv_timer_t *timer)
 {
     (void)timer;
+    wind_readings_t wind;
     sensor_readings_t readings;
-    if (!sensors_get_latest(&readings)) {
-        return;
-    }
+    const bool have_wind = wind_get_latest(&wind) && wind.valid;
+    const bool have_sensors = sensors_get_latest(&readings);
+    char distance[32] = "Dist: -- mm";
+    char temperature[32] = "Temp: -- C";
+    char humidity[32] = "Hum: -- %";
+    char water_temperature[32] = "Water: -- C";
+    char wind_speed[32] = "Wind: -- m/s";
 
-    if (readings.distance_valid) {
-        char text[32];
-        snprintf(text, sizeof(text), "Dist: %u mm", (unsigned)readings.distance_mm);
-        set_label_text(distance_label, text);
-    } else {
-        set_label_text(distance_label, "Dist: -- mm");
+    if (have_sensors && readings.distance_valid) {
+        snprintf(distance, sizeof(distance), "Dist: %u mm", (unsigned)readings.distance_mm);
     }
-
-    if (readings.climate_valid) {
-        set_float_label(temperature_label, "Temp: %.1f C", readings.temperature_c);
-        set_float_label(humidity_label, "Hum: %.1f %%", readings.humidity_percent);
-    } else {
-        set_label_text(temperature_label, "Temp: -- C");
-        set_label_text(humidity_label, "Hum: -- %");
+    if (have_sensors && readings.climate_valid) {
+        snprintf(temperature, sizeof(temperature), "Temp: %.1f C", (double)readings.temperature_c);
+        snprintf(humidity, sizeof(humidity), "Hum: %.0f %%", (double)readings.humidity_percent);
     }
-
-    if (readings.water_temperature_valid) {
-        set_float_label(water_temperature_label, "Water: %.1f C", readings.water_temperature_c);
-    } else {
-        set_label_text(water_temperature_label, "Water: -- C");
+    if (have_sensors && readings.water_temperature_valid) {
+        snprintf(water_temperature, sizeof(water_temperature), "Water: %.1f C",
+                 (double)readings.water_temperature_c);
     }
-}
-
-static lv_obj_t *create_label_row(lv_obj_t *screen, int width, int y, const char *text)
-{
-    lv_obj_t *label = lv_label_create(screen);
-    lv_obj_set_width(label, width);
-    lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
-    lv_label_set_text(label, text);
-    lv_obj_set_pos(label, 0, y);
-    return label;
+    if (have_wind) {
+        snprintf(wind_speed, sizeof(wind_speed), "Wind: %.1f m/s", (double)wind.speed_ms);
+    }
+    char text[5 * 32 + 4];
+    snprintf(text, sizeof(text), "%s\n%s\n%s\n%s\n%s", distance, temperature, humidity,
+             water_temperature, wind_speed);
+    set_label_text(measurements_label, text);
 }
 
 void display_ui_create(lv_display_t *display)
@@ -75,11 +74,17 @@ void display_ui_create(lv_display_t *display)
     lv_obj_set_style_pad_all(screen, 0, 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
     const int width = lv_display_get_horizontal_resolution(display);
-    distance_label = create_label_row(screen, width, 0, "Dist: -- mm");
-    temperature_label = create_label_row(screen, width, LABEL_ROW_HEIGHT, "Temp: -- C");
-    humidity_label = create_label_row(screen, width, 2 * LABEL_ROW_HEIGHT, "Hum: -- %");
-    water_temperature_label = create_label_row(screen, width, 3 * LABEL_ROW_HEIGHT, "Water: -- C");
+    measurements_label = lv_label_create(screen);
+    lv_obj_set_width(measurements_label, width);
+    lv_label_set_long_mode(measurements_label, LV_LABEL_LONG_CLIP);
+    lv_obj_set_style_text_font(measurements_label, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_set_style_text_line_space(measurements_label, 1, LV_PART_MAIN);
+    lv_label_set_text(measurements_label,
+                      "Dist: -- mm\nTemp: -- C\nHum: -- %\nWater: -- C\nWind: -- m/s");
+    lv_obj_set_pos(measurements_label, 0, 1);
 
     lv_timer_t *sensors_timer = lv_timer_create(sensors_ui_cb, SENSOR_REFRESH_INTERVAL_MS, NULL);
     assert(sensors_timer);
 }
+
+#endif

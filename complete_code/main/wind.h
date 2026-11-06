@@ -8,7 +8,7 @@
 typedef struct {
     bool valid;
     int64_t sampled_at_us;
-    float speed_kmh;
+    float speed_ms;
     float direction_deg; // 0 = north, 90 = east, 180 = south, 270 = west.
 } wind_readings_t;
 

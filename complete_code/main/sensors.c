@@ -1,5 +1,6 @@
 #include "sensors.h"
 
+#include "board_config.h"
 #include "i2c_shared.h"
 #include "vl53l4cd.h"
 #include "esp_check.h"
@@ -10,7 +11,7 @@
 #include "freertos/task.h"
 #include <rom/ets_sys.h>
 
-#define DS18B20_GPIO GPIO_NUM_11
+#define DS18B20_GPIO BOARD_DS18B20_GPIO
 #define DS18B20_CONVERSION_TIME_MS 750
 #define DS18B20_CMD_SKIP_ROM 0xCCU
 #define DS18B20_CMD_CONVERT_TEMPERATURE 0x44U
@@ -35,10 +36,7 @@ static i2c_master_dev_handle_t sht;
 static i2c_master_bus_handle_t sensor_bus;
 static QueueHandle_t readings_queue;
 
-static void ds18b20_set_bus_mode(gpio_mode_t mode)
-{
-    gpio_set_direction(DS18B20_GPIO, mode);
-}
+static void ds18b20_set_bus_mode(gpio_mode_t mode) { gpio_set_direction(DS18B20_GPIO, mode); }
 
 static void ds18b20_write_bit(bool bit)
 {
@@ -153,7 +151,7 @@ static void ds18b20_update(ds18b20_state_t *state, sensor_readings_t *readings)
 
     const bool valid = err == ESP_OK;
     if (!state->reported || readings->water_temperature_valid != valid) {
-        ESP_LOGI(TAG, "DS18B20 on GPIO 11: %s", esp_err_to_name(err));
+        ESP_LOGI(TAG, "DS18B20 on GPIO %d: %s", DS18B20_GPIO, esp_err_to_name(err));
         state->reported = true;
     }
     readings->water_temperature_valid = valid;
@@ -231,8 +229,8 @@ static esp_err_t sht45_read(sensor_readings_t *readings)
 static void log_readings(const sensor_readings_t *readings)
 {
     if (readings->climate_valid) {
-        ESP_LOGI(TAG, "Temperature %.1f C, humidity %.1f %%",
-                 (double)readings->temperature_c, (double)readings->humidity_percent);
+        ESP_LOGI(TAG, "Temperature %.1f C, humidity %.1f %%", (double)readings->temperature_c,
+                 (double)readings->humidity_percent);
     }
     if (readings->water_temperature_valid) {
         ESP_LOGI(TAG, "Water temperature %.1f C", (double)readings->water_temperature_c);
@@ -342,8 +340,8 @@ esp_err_t sensors_start(i2c_master_bus_handle_t bus)
         return ESP_ERR_NO_MEM;
     }
 
-    if (xTaskCreate(sensors_task, "sensors", SENSOR_TASK_STACK_SIZE,
-                    NULL, SENSOR_TASK_PRIORITY, NULL) == pdPASS) {
+    if (xTaskCreate(sensors_task, "sensors", SENSOR_TASK_STACK_SIZE, NULL, SENSOR_TASK_PRIORITY,
+                    NULL) == pdPASS) {
         return ESP_OK;
     }
 

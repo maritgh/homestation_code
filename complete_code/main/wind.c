@@ -12,9 +12,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "sdkconfig.h"
+#include "board_config.h"
 
-#define SAMPLE_MS 200
+#define WIND_SAMPLE_INTERVAL_MS 200
+#define WIND_TASK_STACK_SIZE 3072
+#define WIND_TASK_PRIORITY 1
 #define MAX_READING_AGE_US 1000000
 #define TARE_READINGS 10
 #define PI 3.14159265358979323846f
@@ -42,10 +44,12 @@ static esp_err_t hx711_init(hx711_t *sensor)
 {
     gpio_config_t input = {
         .pin_bit_mask = 1ULL << sensor->data,
-        .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     gpio_config_t output = {
-        .pin_bit_mask = 1ULL << sensor->clock, .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask = 1ULL << sensor->clock,
+        .mode = GPIO_MODE_OUTPUT,
     };
     ESP_RETURN_ON_ERROR(gpio_set_level(sensor->clock, 0), TAG, "Set HX711 clock");
     ESP_RETURN_ON_ERROR(gpio_config(&output), TAG, "Configure HX711 clock");
@@ -57,7 +61,9 @@ static esp_err_t hx711_init(hx711_t *sensor)
  * beyond 60 us, which would power down the HX711. */
 static bool hx711_read(hx711_t *sensor, int32_t *result)
 {
-    if (gpio_get_level(sensor->data)) return false;
+    if (gpio_get_level(sensor->data)) {
+        return false;
+    }
     uint32_t value = 0;
     portENTER_CRITICAL(&clock_lock);
     for (int bit = 0; bit < 24; bit++) {
@@ -114,28 +120,34 @@ static void wind_task(void *arg)
         if (force_available(&ns) && force_available(&ew)) {
             const float force_ns = sensor_force(&ns);
             const float force_ew = sensor_force(&ew);
-            readings.speed_kmh = sqrtf(hypotf(force_ns, force_ew) * force_to_speed) * 3.6f;
+            readings.speed_ms = sqrtf(hypotf(force_ns, force_ew) * force_to_speed) ;
             readings.direction_deg = atan2f(force_ew, force_ns) * 180 / PI;
-            if (readings.direction_deg < 0) readings.direction_deg += 360;
-            readings.valid = isfinite(readings.speed_kmh) && isfinite(readings.direction_deg);
+            if (readings.direction_deg < 0) {
+                readings.direction_deg += 360;
+            }
+            readings.valid = isfinite(readings.speed_ms) && isfinite(readings.direction_deg);
         }
         xQueueOverwrite(readings_queue, &readings);
-        vTaskDelay(pdMS_TO_TICKS(SAMPLE_MS));
+        vTaskDelay(pdMS_TO_TICKS(WIND_SAMPLE_INTERVAL_MS));
     }
 }
 
 esp_err_t wind_start(void)
 {
-    if (readings_queue) return ESP_ERR_INVALID_STATE;
-    ns = (hx711_t){.data = CONFIG_WIND_NS_DATA_GPIO, .clock = CONFIG_WIND_NS_CLOCK_GPIO,
-                   .calibration = strtof(CONFIG_WIND_NS_CALIBRATION, NULL)};
-    ew = (hx711_t){.data = CONFIG_WIND_EW_DATA_GPIO, .clock = CONFIG_WIND_EW_CLOCK_GPIO,
-                   .calibration = strtof(CONFIG_WIND_EW_CALIBRATION, NULL)};
+    if (readings_queue) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    ns = (hx711_t){.data = WIND_NS_DATA_GPIO,
+                   .clock = WIND_NS_CLOCK_GPIO,
+                   .calibration = strtof(WIND_NS_CALIBRATION, NULL)};
+    ew = (hx711_t){.data = WIND_EW_DATA_GPIO,
+                   .clock = WIND_EW_CLOCK_GPIO,
+                   .calibration = strtof(WIND_EW_CALIBRATION, NULL)};
     const int pins[] = {ns.data, ns.clock, ew.data, ew.clock};
     for (int i = 0; i < 4; i++) {
         if (!GPIO_IS_VALID_GPIO(pins[i]) ||
             ((i == 1 || i == 3) && !GPIO_IS_VALID_OUTPUT_GPIO(pins[i]))) {
-            ESP_LOGE(TAG, "Invalid HX711 GPIO; check Homestation in menuconfig");
+            ESP_LOGE(TAG, "Invalid HX711 GPIO; check board_config.h");
             return ESP_ERR_INVALID_ARG;
         }
         for (int j = 0; j < i; j++) {
@@ -145,11 +157,10 @@ esp_err_t wind_start(void)
             }
         }
     }
-    const float density = strtof(CONFIG_WIND_AIR_DENSITY, NULL);
-    const float radius = CONFIG_WIND_PLATE_DIAMETER_MM / 2000.0f;
-    if (!isfinite(ns.calibration) || !isfinite(ew.calibration) ||
-        ns.calibration == 0 || ew.calibration == 0 ||
-        !isfinite(density) || density <= 0 || radius <= 0) {
+    const float density = strtof(WIND_AIR_DENSITY, NULL);
+    const float radius = WIND_PLATE_DIAMETER_MM / 2000.0f;
+    if (!isfinite(ns.calibration) || !isfinite(ew.calibration) || ns.calibration == 0 ||
+        ew.calibration == 0 || !isfinite(density) || density <= 0 || radius <= 0) {
         ESP_LOGE(TAG, "Invalid wind calibration, plate diameter or air density");
         return ESP_ERR_INVALID_ARG;
     }
@@ -157,11 +168,14 @@ esp_err_t wind_start(void)
     ESP_RETURN_ON_ERROR(hx711_init(&ns), TAG, "Initialize NS HX711");
     ESP_RETURN_ON_ERROR(hx711_init(&ew), TAG, "Initialize EW HX711");
     readings_queue = xQueueCreate(1, sizeof(wind_readings_t));
-    if (!readings_queue) return ESP_ERR_NO_MEM;
-    ESP_LOGI(TAG, "HX711 NS DOUT=%d SCK=%d; EW DOUT=%d SCK=%d",
-             (int)ns.data, (int)ns.clock, (int)ew.data, (int)ew.clock);
+    if (!readings_queue) {
+        return ESP_ERR_NO_MEM;
+    }
+    ESP_LOGI(TAG, "HX711 NS DOUT=%d SCK=%d; EW DOUT=%d SCK=%d", (int)ns.data, (int)ns.clock,
+             (int)ew.data, (int)ew.clock);
     ESP_LOGI(TAG, "Keep plate unloaded during startup tare (10 readings)");
-    if (xTaskCreate(wind_task, "wind", 3072, NULL, 1, NULL) != pdPASS) {
+    if (xTaskCreate(wind_task, "wind", WIND_TASK_STACK_SIZE, NULL, WIND_TASK_PRIORITY, NULL) !=
+        pdPASS) {
         vQueueDelete(readings_queue);
         readings_queue = NULL;
         return ESP_ERR_NO_MEM;

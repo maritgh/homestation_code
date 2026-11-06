@@ -22,17 +22,14 @@
   "idf.openOcdConfigs": [
     "board/esp32s3-builtin.cfg"
   ],
-  "idf.port": "/dev/tty.usbmodem101",
-  "idf.currentSetup": "/Users/maritsnijder/.espressif/v5.5.3/esp-idf",
-  "idf.customExtraVars": {
-    "IDF_TARGET": "esp32s3",
-    "ADF_PATH": "/Users/maritsnijder/.espressif/tools"
-  },
-  "clangd.path": "/Users/maritsnijder/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=/Users/maritsnijder/smart_things/schermpje/build"
+    "--compile-commands-dir=/Users/maritsnijder/Library/Mobile Documents/com~apple~CloudDocs/projects/smart_things/homestation_code/complete_code/build"
   ],
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "idf.buildPath": "${workspaceFolder}/build",
+  "clangd.path": "/Users/maritsnijder/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "idf.port": "/dev/tty.usbmodem101",
+  "idf.currentSetup": "/Users/maritsnijder/.espressif/v5.5.3/esp-idf"
 }

@@ -1,7 +1,9 @@
 #pragma once
 
-#define HOME_STATION_WIFI_SSID "Iphone_van_marit"
-#define HOME_STATION_WIFI_PASSWORD "hoi hoi hoi"
+#include "sdkconfig.h"
+
+#define HOME_STATION_WIFI_SSID CONFIG_WIFI_SSID
+#define HOME_STATION_WIFI_PASSWORD CONFIG_WIFI_PASSWORD
 
 #define HOME_STATION_MQTT_URI "mqtt://145.24.237.237:8883"
 #define HOME_STATION_ID "marit"

@@ -14,9 +14,9 @@
 
 static const char *TAG = "display";
 
-#define LVGL_TASK_STACK_SIZE   (4 * 1024)
-#define LVGL_TASK_PRIORITY     2
-#define LVGL_PALETTE_SIZE      8
+#define LVGL_TASK_STACK_SIZE (4 * 1024)
+#define LVGL_TASK_PRIORITY 2
+#define LVGL_PALETTE_SIZE 8
 #define LVGL_TASK_MAX_DELAY_MS 500
 #define LVGL_TASK_MIN_DELAY_MS (1000 / CONFIG_FREERTOS_HZ)
 
@@ -40,8 +40,8 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
             const bool pixel_set = (px_map[(width / 8) * y + x / 8] & source_mask) != 0;
             const uint8_t target_mask = 1U << (y % 8);
             uint8_t *pixel_byte = &oled_buffer[width * (y / 8) + x];
-            const uint8_t updated = pixel_set ? (*pixel_byte & (uint8_t)~target_mask)
-                                              : (*pixel_byte | target_mask);
+            const uint8_t updated =
+                pixel_set ? (*pixel_byte & (uint8_t)~target_mask) : (*pixel_byte | target_mask);
             if (updated != *pixel_byte) {
                 *pixel_byte = updated;
                 dirty_pages |= 1U << (y / 8);
@@ -55,17 +55,15 @@ static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px
         // A partial/failed transfer must be retried even if pixels stay unchanged.
         oled_needs_full_refresh = draw_err != ESP_OK;
         if (draw_err != ESP_OK) {
-            ESP_LOGW(TAG, "OLED frame failed: %s; retry on next refresh", esp_err_to_name(draw_err));
+            ESP_LOGW(TAG, "OLED frame failed: %s; retry on next refresh",
+                     esp_err_to_name(draw_err));
         }
     }
     // I2C writes are synchronous; release LVGL's buffer after the last page.
     lv_display_flush_ready(disp);
 }
 
-static uint32_t lvgl_tick_ms(void)
-{
-    return (uint32_t)(esp_timer_get_time() / 1000);
-}
+static uint32_t lvgl_tick_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
 static void lvgl_port_task(void *arg)
 {
@@ -113,7 +111,7 @@ void display_start(i2c_master_bus_handle_t bus)
     // Create the UI before the task starts; all later LVGL calls run in that task.
     display_ui_create(display);
 
-    BaseType_t created = xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE,
-                                    display, LVGL_TASK_PRIORITY, NULL);
+    BaseType_t created = xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, display,
+                                     LVGL_TASK_PRIORITY, NULL);
     ESP_ERROR_CHECK(created == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
 }

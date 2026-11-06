@@ -13,9 +13,8 @@ static void send_init_commands(esp_lcd_panel_io_handle_t io)
     // DC/DC on, segment/COM direction, COM pins, contrast, precharge,
     // VCOM, RAM display mode, and normal (non-inverted) display.
     static const uint8_t commands[] = {
-        0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40,
-        0xAD, 0x8B, 0xA1, 0xC8, 0xDA, 0x12, 0x81, 0x80,
-        0xD9, 0x22, 0xDB, 0x35, 0xA4, 0xA6,
+        0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0xAD, 0x8B, 0xA1,
+        0xC8, 0xDA, 0x12, 0x81, 0x80, 0xD9, 0x22, 0xDB, 0x35, 0xA4, 0xA6,
     };
     vTaskDelay(pdMS_TO_TICKS(100));
     ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io, -1, commands, sizeof(commands)));
@@ -41,8 +40,7 @@ esp_err_t sh1106_draw_pages(esp_lcd_panel_io_handle_t io, const uint8_t *pixels,
         if (err != ESP_OK) {
             return err;
         }
-        err = esp_lcd_panel_io_tx_color(io, -1,
-                                       pixels + page * SH1106_WIDTH, SH1106_WIDTH);
+        err = esp_lcd_panel_io_tx_color(io, -1, pixels + page * SH1106_WIDTH, SH1106_WIDTH);
         if (err != ESP_OK) {
             return err;
         }

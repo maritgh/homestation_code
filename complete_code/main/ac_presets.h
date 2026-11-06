@@ -35,4 +35,3 @@ static const ac_preset_t AC_PRESETS[] = {
 };
 
 #define AC_PRESET_COUNT (sizeof(AC_PRESETS) / sizeof(AC_PRESETS[0]))
-
