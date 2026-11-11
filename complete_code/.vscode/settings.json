@@ -30,6 +30,6 @@
   "idf.flashType": "UART",
   "idf.buildPath": "${workspaceFolder}/build",
   "clangd.path": "/Users/maritsnijder/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
-  "idf.port": "/dev/tty.usbmodem101",
+  "idf.port": "/dev/tty.usbmodem1101",
   "idf.currentSetup": "/Users/maritsnijder/.espressif/v5.5.3/esp-idf"
 }

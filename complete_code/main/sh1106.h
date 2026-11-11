@@ -10,11 +10,11 @@
 #define SH1106_ALL_PAGES ((1U << SH1106_PAGE_COUNT) - 1U)
 #define SH1106_FRAME_BYTES (SH1106_WIDTH * SH1106_PAGE_COUNT)
 
-// Initialize and clear the panel before starting other users of the I2C bus.
+// Initialiseer en wis het scherm voordat andere gebruikers van de I2C-bus starten.
 esp_lcd_panel_io_handle_t sh1106_init(i2c_master_bus_handle_t bus);
 
-// Send a complete frame of eight vertical-bit pages. The caller locks the bus.
+// Verstuur een volledig frame van acht pagina's met verticale bits. De aanroeper vergrendelt de bus.
 esp_err_t sh1106_draw(esp_lcd_panel_io_handle_t io, const uint8_t *pixels);
 
-// Send selected pages (bit 0 selects the first page). The caller locks the bus.
+// Verstuur geselecteerde pagina's (bit 0 kiest de eerste). De aanroeper vergrendelt de bus.
 esp_err_t sh1106_draw_pages(esp_lcd_panel_io_handle_t io, const uint8_t *pixels, uint8_t pages);

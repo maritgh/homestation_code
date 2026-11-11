@@ -9,9 +9,9 @@
 
 static void send_init_commands(esp_lcd_panel_io_handle_t io)
 {
-    // Command stream: display off, clock, multiplex, offset, start line,
-    // DC/DC on, segment/COM direction, COM pins, contrast, precharge,
-    // VCOM, RAM display mode, and normal (non-inverted) display.
+    // Commandoreeks: scherm uit, klok, multiplex, offset, startregel,
+    // DC/DC aan, segment-/COM-richting, COM-pinnen, contrast, voorladen,
+    // VCOM, RAM-weergavemodus en normale (niet-omgekeerde) weergave.
     static const uint8_t commands[] = {
         0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0xAD, 0x8B, 0xA1,
         0xC8, 0xDA, 0x12, 0x81, 0x80, 0xD9, 0x22, 0xDB, 0x35, 0xA4, 0xA6,

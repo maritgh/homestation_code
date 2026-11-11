@@ -35,7 +35,7 @@ static esp_timer_handle_t wifi_retry_timer;
 static esp_mqtt_client_handle_t client;
 static char actuator_topic[128];
 static char actuator_status_topic[144];
-// Only the MQTT event handler owns this in-progress message.
+// Alleen de MQTT-eventhandler beheert dit bericht dat nog wordt samengesteld.
 static struct {
     char *data;
     size_t received;
@@ -53,7 +53,7 @@ static void reset_actuator_payload(void)
 static void publish_actuator_reply(const char *json, void *context)
 {
     (void)context;
-    // This callback runs in the IR worker, never in the MQTT event handler.
+    // Deze callback draait in de IR-taak, nooit in de MQTT-eventhandler.
     if ((xEventGroupGetBits(connection_events) & CONNECTED_BITS) == CONNECTED_BITS &&
         esp_mqtt_client_publish(client, actuator_status_topic, json, 0, 0, 0) < 0) {
         ESP_LOGW(TAG, "Could not publish IR response");
@@ -77,14 +77,14 @@ static void receive_actuator_data(const esp_mqtt_event_t *event)
         actuator_message.data = malloc(actuator_message.total + 1);
         if (!actuator_message.data) {
             reset_actuator_payload();
-            ESP_LOGW(TAG, "No memory for actuator command");
+            ESP_LOGW(TAG, "Geen memory voor actuator command");
             return;
         }
     }
     if (!actuator_message.data) {
         return;
     }
-    // MQTT payloads can span multiple DATA events; topic is absent on later chunks.
+    // MQTT-berichtinhoud kan over meerdere DATA-events lopen; latere delen bevatten geen topic.
     if (event->current_data_offset < 0 || event->data_len <= 0 || !event->data ||
         event->total_data_len != actuator_message.total ||
         event->current_data_offset != actuator_message.received ||
@@ -124,7 +124,7 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         wifi_connect(NULL);
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         xEventGroupClearBits(connection_events, CONNECTED_BITS);
-        ESP_LOGW(TAG, "Wi-Fi disconnected; retrying in 5 seconds");
+        ESP_LOGW(TAG, "Wi-Fi disconnected, retrying in 5 seconds");
         esp_timer_stop(wifi_retry_timer);
         esp_timer_start_once(wifi_retry_timer, WIFI_RETRY_US);
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
@@ -143,7 +143,7 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         xEventGroupSetBits(connection_events, MQTT_CONNECTED_BIT);
         ESP_LOGI(TAG, "MQTT connected");
         reset_actuator_payload();
-        // Resubscribe after every reconnect (the broker uses a clean session).
+        // Abonneer opnieuw na elke herverbinding (de broker gebruikt een schone sessie).
         if (esp_mqtt_client_subscribe(client, actuator_topic, 0) < 0) {
             ESP_LOGE(TAG, "Could not subscribe to %s", actuator_topic);
         }
@@ -151,13 +151,13 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     case MQTT_EVENT_DISCONNECTED:
         xEventGroupClearBits(connection_events, MQTT_CONNECTED_BIT);
         reset_actuator_payload();
-        ESP_LOGW(TAG, "MQTT disconnected; automatic reconnect enabled");
+        ESP_LOGW(TAG, "MQTT disconnected, automatic reconnect enabled");
         break;
     case MQTT_EVENT_DATA:
         receive_actuator_data((esp_mqtt_event_handle_t)data);
         break;
     case MQTT_EVENT_ERROR:
-        ESP_LOGW(TAG, "MQTT connection error; check broker address and transport");
+        ESP_LOGW(TAG, "MQTT connection error, check broker address and transport");
         break;
     default:
         break;
@@ -178,11 +178,11 @@ static void publish_value(const char *metric, float value)
                                HOME_STATION_API_KEY, (double)value);
     if (topic_len < 0 || topic_len >= sizeof(topic) || payload_len < 0 ||
         payload_len >= sizeof(payload)) {
-        ESP_LOGE(TAG, "MQTT topic or payload too long");
+        ESP_LOGE(TAG, "MQTT topic or payload te lang");
         return;
     }
 
-    // Network delays never block sensor/display updates.
+    // Netwerkvertragingen blokkeren nooit sensor- of schermupdates.
     if (esp_mqtt_client_enqueue(client, topic, payload, payload_len, 0, 0, true) < 0) {
         ESP_LOGW(TAG, "Could not queue %s", metric);
     }
@@ -195,7 +195,6 @@ static void publish_readings(void)
         publish_value("windSpeed", wind.speed_ms);
         
         ESP_LOGI(TAG, "windspeed %.1f m/s", (double)wind.speed_ms);
-        publish_value("custom/windrichting", wind.direction_deg);
     }
 
     sensor_readings_t readings;
@@ -223,7 +222,7 @@ static void mqtt_task(void *arg)
     xEventGroupWaitBits(connection_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
     esp_err_t err = esp_mqtt_client_start(client);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "MQTT start failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "MQTT start gefaald: %s", esp_err_to_name(err));
         vTaskDelete(NULL);
         return;
     }
@@ -237,9 +236,9 @@ static void mqtt_task(void *arg)
 
 static esp_err_t configure_wifi(void)
 {
-    // Leave existing NVS data intact if initialization fails.
-    ESP_RETURN_ON_ERROR(nvs_flash_init(), TAG, "Initialize NVS");
-    ESP_RETURN_ON_ERROR(esp_netif_init(), TAG, "Initialize network stack");
+    // Behoud bestaande NVS-gegevens als de initialisatie mislukt.
+    ESP_RETURN_ON_ERROR(nvs_flash_init(), TAG, "Initialiseer NVS");
+    ESP_RETURN_ON_ERROR(esp_netif_init(), TAG, "Initialiseer network stack");
     ESP_RETURN_ON_ERROR(esp_event_loop_create_default(), TAG, "Create event loop");
     if (!esp_netif_create_default_wifi_sta()) {
         return ESP_ERR_NO_MEM;
@@ -257,7 +256,7 @@ static esp_err_t configure_wifi(void)
                         "Create retry timer");
 
     wifi_init_config_t init_config = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_RETURN_ON_ERROR(esp_wifi_init(&init_config), TAG, "Initialize Wi-Fi");
+    ESP_RETURN_ON_ERROR(esp_wifi_init(&init_config), TAG, "Initialiseer Wi-Fi");
     ESP_RETURN_ON_ERROR(esp_wifi_set_storage(WIFI_STORAGE_RAM), TAG, "Set Wi-Fi storage");
     ESP_RETURN_ON_ERROR(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event, NULL),
                         TAG, "Register Wi-Fi events");

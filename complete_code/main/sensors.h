@@ -17,5 +17,5 @@ typedef struct {
 } sensor_readings_t;
 
 esp_err_t sensors_start(i2c_master_bus_handle_t bus);
-// Copy the latest snapshot without consuming it; display and MQTT can both read it.
+// Kopieer de laatste meetgegevens zonder ze te verwijderen; scherm en MQTT kunnen ze beide lezen.
 bool sensors_get_latest(sensor_readings_t *readings);

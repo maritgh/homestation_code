@@ -1,6 +1,6 @@
 # Homestation
 
-Firmware voor een ESP32-S3 die omgevingsmetingen verzamelt, op een OLED toont
+Firmware voor een ESP32-S3 die omgevingsmetingen verzamelt, op een display toont
 en via MQTT publiceert. Met een IR-ontvanger en IR-zender kan het station ook
 airco-opdrachten aanleren, bewaren en via MQTT uitvoeren.
 
@@ -115,7 +115,6 @@ Niet-beschikbare of ongeldige metingen worden overgeslagen.
 | `custom/distance` | Afstand | mm |
 | `custom/watertemperatuur` | Watertemperatuur | °C |
 | `windSpeed` | Windsnelheid | m/s |
-| `custom/windrichting` | Windrichting | graden |
 | `actuator` | Binnenkomende IR-opdracht | JSON |
 | `actuator/status` | Antwoord op een IR-opdracht | JSON |
 
@@ -125,7 +124,7 @@ Voorbeeld van een meetpayload:
 {"apiKey":"<jouw-api-sleutel>","value":21.50}
 ```
 
-De windrichting gebruikt 0° = noord, 90° = oost, 180° = zuid en 270° = west.
+De twee windsensoren meten dezelfde richting; er wordt geen windrichting gepubliceerd.
 De exacte topicnamen hierboven zijn ook de namen die de firmware verstuurt.
 
 ## IR-bediening
@@ -165,17 +164,39 @@ antwoorden, foutcodes, TLS-opties en het import-/exportproces.
 
 ## Windkalibratie
 
-Houd de meetplaat bij het opstarten onbelast: iedere HX711-as gebruikt de
-eerste tien succesvolle metingen voor de nulstelling. De taak leest elke
-200 ms en levert pas geldige winddata wanneer beide assen zijn genuld en
-een meting beschikbaar hebben. Data ouder dan één seconde is ongeldig.
+Zet beide windsensoren in dezelfde richting. De namen NS en EW in de code
+en logs verwijzen alleen nog naar de bestaande aansluitingen.
 
-Stel onder **Homestation** de kalibratie per as in (ruwe counts per gram),
+Houd beide meetplaten bij het opstarten onbelast: iedere HX711 gebruikt de
+eerste tien succesvolle metingen voor de automatische nulstelling (tare).
+De taak leest elke 200 ms en berekent de windsnelheid zodra minstens één
+genulde sensor een meting beschikbaar heeft. Iedere sensor levert een eigen
+snelheid uit `sqrt(abs(kracht) * force_to_speed)`. Van de twee gekalibreerde
+snelheden wordt het rekenkundig gemiddelde genomen. Bijvoorbeeld: 4 en 6 m/s
+geven samen 5 m/s. Als maar één sensor beschikbaar is, wordt alleen die
+snelheid gebruikt. Er wordt geen windrichting berekend of gepubliceerd.
+Data ouder dan één seconde is ongeldig.
+
+Per sensor dempt een voortschrijdend gemiddelde van de laatste tien metingen
+de ruis vóór de kracht- en snelheidsberekening (ongeveer twee seconden bij
+continue metingen). Tijdens het vullen worden de al beschikbare metingen
+gemiddeld. Na meer dan één seconde zonder meting begint het gemiddelde
+opnieuw; de nulstelling blijft behouden. De venstergrootte staat als
+`WIND_AVERAGE_READINGS` en het aantal taremetingen als `TARE_READINGS` in `main/wind.c`.
+
+Stel in `main/wind.c` de kalibratie per sensor in (ruwe counts per gram),
 de plaatdiameter en de luchtdichtheid in. De meegeleverde instellingen
 gebruiken een plaatdiameter van 80 mm en een luchtdichtheid van 1,225 kg/m³.
 De firmware berekent de snelheid uit de resulterende kracht en het
-plaatoppervlak. Kalibratie en asoriëntatie moeten bij de fysieke opstelling
+plaatoppervlak. Kalibratie en oriëntatie moeten bij de fysieke opstelling
 passen; de meegeleverde waarden zijn geen universele sensorkalibratie.
+
+Na de snelheidsberekening per sensor wordt de lineaire correctie
+`windsnelheid = max(0, A * berekende_snelheid + B)` toegepast, met `A`
+en `B` in `main/wind.c`. Negatieve uitkomsten worden per sensor op 0 m/s
+gezet voordat het gemiddelde wordt berekend. Het gemiddelde van de beschikbare gecorrigeerde
+snelheden in m/s wordt gebruikt voor scherm, MQTT en debuglogs. De logs
+tonen ook de afzonderlijke snelheden wanneer beide sensoren beschikbaar zijn.
 
 ## Projectstructuur
 
@@ -184,7 +205,7 @@ passen; de meegeleverde waarden zijn geen universele sensorkalibratie.
 | `main/main.c` | Gedeelde I²C-bus en opstartvolgorde |
 | `main/board_config.h` | Vaste aansluitingen van het bord |
 | `main/sensors.c`, `sensors.h` | Sensoruitlezing en laatste meetwaarden |
-| `main/wind.c`, `wind.h` | HX711, nulstelling en windberekening |
+| `main/wind.c`, `wind.h` | HX711, nulstelling, middeling en windberekening |
 | `main/display.c`, `display_ui.c` | LVGL, schermupdates en meetlabels |
 | `main/sh1106.c`, `sh1106.h` | SH1106-schermdriver |
 | `main/vl53l4cd.c`, `vl53l4cd.h` | Aangepaste ST-afstandsdriver |
@@ -240,7 +261,7 @@ registertabel van de aangepaste ST-driver in `main/vl53l4cd.c`.
 | --- | --- |
 | Geen Wi-Fi/MQTT | Controleer Wi-Fi-instellingen, broker-URL, bereikbaarheid en of de broker TLS verwacht. |
 | Scherm toont `--` | Bekijk de I²C-scan en sensormeldingen; controleer voeding, massa, adressen en aansluitingen. |
-| Geen windpublicatie | Houd de plaat onbelast bij starten en controleer beide HX711-aansluitingen en kalibraties. |
+| Geen windpublicatie | Houd beide platen onbelast bij opstarten en controleer de HX711-aansluitingen en kalibraties; minstens één sensor moet klaar zijn met nulstellen en metingen leveren. |
 | IR start niet | Controleer GPIO-conflicten en meldingen over de partitie `ir_frames`. |
 | IR meldt `ESP_ERR_NOT_FOUND` | Controleer het preset-id en leer of importeer eerst een opname. |
 | IR-tool krijgt geen antwoord | Gebruik de broker-URL en de juiste station-id; controleer of de firmware online is. |

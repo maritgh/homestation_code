@@ -72,7 +72,7 @@ def encode_command(document):
 
 
 class MqttSession:
-    """Subscribe before sending commands; process replies in the calling thread."""
+    """Abonneer vóór het versturen van commando's; verwerk antwoorden in de aanroepende thread."""
     def __init__(self, broker, station, timeout=30, username=None, password=None, cafile=None):
         try:
             import paho.mqtt.client as mqtt
@@ -157,7 +157,7 @@ class MqttSession:
     def send(self, command):
         if self.error:
             raise ValueError(self.error)
-        # Clear replies left over from a previous command; never publish retained actions.
+        # Wis antwoorden van een vorig commando; publiceer acties nooit als blijvend bericht.
         while True:
             try:
                 self.messages.get_nowait()
@@ -225,7 +225,7 @@ def export_presets(session, destination):
               for name, encoded in document["presets"].items()}
     if actual != expected:
         raise ValueError("Export is onvolledig of opnames zijn ondertussen gewijzigd; bestaand bestand blijft behouden. Probeer opnieuw.")
-    # Replace only after the entire export has arrived and passed validation.
+    # Vervang het bestand pas nadat de volledige export is ontvangen en gevalideerd.
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination.parent,
@@ -243,7 +243,7 @@ def import_presets(session, source):
     document = validate(json.loads(source.read_text(encoding="utf-8")))
     if not document["presets"]:
         raise ValueError("Dit bestand bevat nog geen opnames")
-    # Validate every command before changing the first preset on the device.
+    # Valideer elk commando voordat de eerste preset op het apparaat wordt gewijzigd.
     commands = [dict(FORMAT, action="import", presets={name: encoded})
                 for name, encoded in document["presets"].items()]
     for command in commands:

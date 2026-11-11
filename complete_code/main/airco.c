@@ -132,7 +132,7 @@ static esp_err_t load_saved_frames_from_partition(const char *partition)
     return ESP_OK;
 }
 
-/* Takes ownership of frame only when both persistence and RAM update succeed. */
+/* Neemt frame alleen over als zowel de permanente opslag als de RAM-update slagen. */
 static esp_err_t store_frame(int slot, rmt_symbol_word_t *frame, size_t count)
 {
     nvs_handle_t handle;
@@ -170,7 +170,7 @@ static void receive_task(void *arg)
             esp_err_t err = ESP_ERR_NO_MEM;
             if (frame) {
                 memcpy(frame, rx_symbols, count * sizeof(*frame));
-                // Demodulated receiver levels are inverted relative to the LED.
+                // De niveaus van de gedemoduleerde ontvanger zijn omgekeerd ten opzichte van de led.
                 for (size_t i = 0; i < count; i++) {
                     frame[i].level0 = !frame[i].level0;
                     frame[i].level1 = !frame[i].level1;
@@ -180,12 +180,12 @@ static void receive_task(void *arg)
                     free(frame);
                 }
             }
-            ESP_LOGI(TAG, "Learn '%s' (%u symbols): %s", AC_PRESETS[slot].id, (unsigned)count,
+            ESP_LOGI(TAG, "Leer '%s' (%u symbols): %s", AC_PRESETS[slot].id, (unsigned)count,
                      esp_err_to_name(err));
         }
         esp_err_t err = rmt_receive(rx_channel, rx_symbols, sizeof(rx_symbols), &receive_config);
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Restart IR receiver: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "Herstart IR ontvanger: %s", esp_err_to_name(err));
             break;
         }
     }
@@ -194,7 +194,7 @@ static void receive_task(void *arg)
 
 static esp_err_t send_frame(int slot)
 {
-    // Use an independent copy so learning/import cannot change an active TX buffer.
+    // Gebruik een aparte kopie zodat aanleren of importeren een actieve zendbuffer niet kan wijzigen.
     xSemaphoreTake(frames_mutex, portMAX_DELAY);
     size_t bytes = saved_counts[slot] * sizeof(rmt_symbol_word_t);
     rmt_symbol_word_t *frame = bytes ? malloc(bytes) : NULL;
@@ -211,12 +211,12 @@ static esp_err_t send_frame(int slot)
     rmt_transmit_config_t config = {.loop_count = 0};
     esp_err_t err = rmt_transmit(tx_channel, copy_encoder, frame, bytes, &config);
     if (err == ESP_OK) {
-        // Maximum frame duration is about 34 seconds (512 * 2 * 32767 us).
+        // De maximale frameduur is ongeveer 34 seconden (512 * 2 * 32767 us).
         err = rmt_tx_wait_all_done(tx_channel, -1);
     }
     free(frame);
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Preset '%s' sent", AC_PRESETS[slot].id);
+        ESP_LOGI(TAG, "Preset '%s' gestuurd", AC_PRESETS[slot].id);
     }
     return err;
 }
@@ -253,8 +253,8 @@ static cJSON *make_response(const char *action, const char *id, esp_err_t err)
     return response;
 }
 
-/* JSON v1 keeps the existing base64, little-endian RMT symbol format.
- * Imported levels already describe the LED output and must not be inverted. */
+/* JSON v1 behoudt het bestaande formaat met base64 en little-endian RMT-symbolen.
+ * Geïmporteerde niveaus beschrijven al de led-uitgang en mogen niet worden omgekeerd. */
 static esp_err_t import_preset(const cJSON *root)
 {
     const cJSON *version = cJSON_GetObjectItemCaseSensitive(root, "version");
@@ -298,7 +298,7 @@ static esp_err_t import_preset(const cJSON *root)
     return err;
 }
 
-/* One response per recorded preset avoids a large monolithic export in RAM. */
+/* Eén antwoord per opgenomen preset voorkomt één grote export in het RAM. */
 static esp_err_t export_presets(const ir_command_t *command)
 {
     unsigned char *raw = malloc(MAX_FRAME_BYTES);
@@ -377,7 +377,7 @@ static void process_command(const ir_command_t *command)
     const cJSON *id_item = cJSON_GetObjectItemCaseSensitive(root, "id");
     const char *action = cJSON_GetStringValue(action_item);
     const char *id = cJSON_GetStringValue(id_item);
-    // Normal actuator messages use {"ir":"koelen19auto"}.
+    // Normale actuatorberichten gebruiken {"ir":"koelen19auto"}.
     if (!action_item) {
         action = "send";
         id = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(root, "ir"));
@@ -451,8 +451,8 @@ static bool valid_pins(void)
 {
     const int reserved[] = {
         BOARD_I2C_SDA_GPIO,        BOARD_I2C_SCL_GPIO,        BOARD_DS18B20_GPIO,
-        WIND_NS_DATA_GPIO,        WIND_NS_CLOCK_GPIO,        WIND_EW_DATA_GPIO,
-        WIND_EW_CLOCK_GPIO,
+        WIND_1_DATA_GPIO,        WIND_1_CLOCK_GPIO,        WIND_2_DATA_GPIO,
+        WIND_2_CLOCK_GPIO,
     };
     if (!GPIO_IS_VALID_GPIO(IR_RX_GPIO) || !GPIO_IS_VALID_OUTPUT_GPIO(IR_TX_GPIO) ||
         IR_RX_GPIO == IR_TX_GPIO) {
@@ -472,15 +472,15 @@ esp_err_t airco_start(void)
         return ESP_ERR_INVALID_STATE;
     }
     if (!valid_pins()) {
-        ESP_LOGE(TAG, "IR GPIO conflicts with another sensor; check board_config.h");
+        ESP_LOGE(TAG, "IR GPIO heeft een conflict met een ander sensor check board_config.h");
         return ESP_ERR_INVALID_ARG;
     }
-    ESP_RETURN_ON_ERROR(nvs_flash_init(), TAG, "Initialize NVS without erasing presets");
+    ESP_RETURN_ON_ERROR(nvs_flash_init(), TAG, "Initialaseer NVS zonder de presets te verwijderen");
     ESP_RETURN_ON_ERROR(nvs_flash_init_partition(IR_STORAGE_PARTITION), TAG,
-                        "Initialize IR storage");
-    ESP_RETURN_ON_ERROR(load_saved_frames_from_partition("nvs"), TAG, "Load legacy presets");
+                        "Initialiseer IR opslag");
+    ESP_RETURN_ON_ERROR(load_saved_frames_from_partition("nvs"), TAG, "Laad legacy presets");
     ESP_RETURN_ON_ERROR(load_saved_frames_from_partition(IR_STORAGE_PARTITION), TAG,
-                        "Load presets");
+                        "Laad presets");
     frames_mutex = xSemaphoreCreateMutex();
     rx_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
     command_queue = xQueueCreate(COMMAND_QUEUE_LENGTH, sizeof(ir_command_t *));
@@ -522,7 +522,7 @@ esp_err_t airco_start(void)
         return ESP_ERR_NO_MEM;
     }
     ready = true;
-    ESP_LOGI(TAG, "IR ready: RX GPIO %d, TX GPIO %d, carrier %d Hz", IR_RX_GPIO, IR_TX_GPIO,
+    ESP_LOGI(TAG, "IR klaar: RX GPIO %d, TX GPIO %d, carrier %d Hz", IR_RX_GPIO, IR_TX_GPIO,
              IR_CARRIER_HZ);
     return ESP_OK;
 }

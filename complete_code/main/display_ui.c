@@ -12,14 +12,14 @@
 #define SENSOR_REFRESH_INTERVAL_MS 200
 
 #if DISPLAY_PIXEL_TEST
-
+// Test om te kijken of in het scherm uberhaupt alle pixels werken.
 void display_ui_create(lv_display_t *display)
 {
     lv_obj_t *screen = lv_display_get_screen_active(display);
     lv_obj_clean(screen);
     lv_obj_set_style_pad_all(screen, 0, 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
-    // The OLED flush callback inverts LVGL pixels, so black here lights every OLED pixel.
+    // De OLED-flushcallback keert LVGL-pixels om, dus zwart laat hier alle OLED-pixels oplichten.
     lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, LV_PART_MAIN);
 }

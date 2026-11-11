@@ -14,7 +14,7 @@ static const char *TAG = "main";
 static void log_startup_error(const char *module, esp_err_t err)
 {
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "%s startup failed: %s", module, esp_err_to_name(err));
+        ESP_LOGE(TAG, "%s startup gefaald: %s", module, esp_err_to_name(err));
     }
 }
 

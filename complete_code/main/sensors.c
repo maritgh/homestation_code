@@ -25,7 +25,6 @@
 #define WATER_READ_INTERVAL_US 2000000
 #define TOF_RETRY_INTERVAL_US 5000000
 #define TOF_STALL_TIMEOUT_US 1000000
-#define SENSOR_LOG_INTERVAL_US 5000000
 #define SENSOR_POLL_INTERVAL_MS 100
 #define SENSOR_TASK_STACK_SIZE 4096
 #define SENSOR_TASK_PRIORITY 1
@@ -143,7 +142,7 @@ static void ds18b20_update(ds18b20_state_t *state, sensor_readings_t *readings)
         state->next_start = now + WATER_READ_INTERVAL_US;
         if (err == ESP_OK) {
             state->converting = true;
-            // The other sensors keep running while the DS18B20 converts.
+            // De andere sensoren blijven werken terwijl de DS18B20 een conversie uitvoert.
             state->ready_at = esp_timer_get_time() + DS18B20_CONVERSION_TIME_MS * 1000;
             return;
         }
@@ -226,20 +225,6 @@ static esp_err_t sht45_read(sensor_readings_t *readings)
     return ESP_OK;
 }
 
-static void log_readings(const sensor_readings_t *readings)
-{
-    if (readings->climate_valid) {
-        ESP_LOGI(TAG, "Temperature %.1f C, humidity %.1f %%", (double)readings->temperature_c,
-                 (double)readings->humidity_percent);
-    }
-    if (readings->water_temperature_valid) {
-        ESP_LOGI(TAG, "Water temperature %.1f C", (double)readings->water_temperature_c);
-    }
-    if (readings->distance_valid) {
-        ESP_LOGI(TAG, "Distance %u mm", (unsigned)readings->distance_mm);
-    }
-}
-
 static void sensors_task(void *arg)
 {
     (void)arg;
@@ -250,7 +235,6 @@ static void sensors_task(void *arg)
     ds18b20_state_t water_state = {0};
     int64_t next_tof_retry = 0;
     int64_t last_tof_activity = 0;
-    int64_t next_log = 0;
 
     while (true) {
         const int64_t now = esp_timer_get_time();
@@ -298,11 +282,6 @@ static void sensors_task(void *arg)
                 next_tof_retry = esp_timer_get_time() + TOF_RETRY_INTERVAL_US;
                 ESP_LOGW(TAG, "VL53L4CD read failed/stalled: %s", esp_err_to_name(err));
             }
-        }
-
-        if (now >= next_log) {
-            log_readings(&readings);
-            next_log = now + SENSOR_LOG_INTERVAL_US;
         }
 
         xQueueOverwrite(readings_queue, &readings);

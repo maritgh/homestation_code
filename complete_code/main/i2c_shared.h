@@ -1,5 +1,5 @@
 #pragma once
 
-// Serialize display and sensor transfers, including driver transaction setup.
+// Voer scherm- en sensoroverdrachten na elkaar uit, inclusief het voorbereiden van drivertransacties.
 void shared_i2c_acquire(void);
 void shared_i2c_release(void);

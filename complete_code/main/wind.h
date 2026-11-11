@@ -6,13 +6,12 @@
 #include "esp_err.h"
 
 typedef struct {
-    bool valid;
+    bool valid; // Minstens één gereedstaande sensor met nulstelling levert een eindige snelheid.
     int64_t sampled_at_us;
-    float speed_ms;
-    float direction_deg; // 0 = north, 90 = east, 180 = south, 270 = west.
+    float speed_ms; // Gemiddelde van beschikbare gelijkgerichte sensoren, inclusief A/B-kalibratie.
 } wind_readings_t;
 
-// Start independent HX711 sampling and automatic startup tare.
+// Start onafhankelijke HX711-metingen met automatische nulstelling bij het opstarten.
 esp_err_t wind_start(void);
-// Copy the latest snapshot without consuming it. Check valid before publishing.
+// Kopieer de laatste meetgegevens zonder ze te verwijderen. Controleer valid vóór publicatie.
 bool wind_get_latest(wind_readings_t *readings);

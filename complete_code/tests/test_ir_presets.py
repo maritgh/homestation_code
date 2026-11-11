@@ -1,4 +1,4 @@
-"""Host checks: python3 -m unittest discover -s tests -v."""
+"""Controles op de computer: python3 -m unittest discover -s tests -v."""
 import base64
 from collections import deque
 import importlib.util
