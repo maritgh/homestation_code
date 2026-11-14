@@ -212,7 +212,7 @@ esp_err_t wind_start(void)
         return ESP_ERR_INVALID_STATE;
     }
     wind1 = (hx711_t){.data = WIND_1_DATA_GPIO,
-                   .clock = WIND_2_CLOCK_GPIO,
+                   .clock = WIND_1_CLOCK_GPIO,
                    .calibration = strtof(WIND_1_CALIBRATION, NULL)};
     wind2 = (hx711_t){.data = WIND_2_DATA_GPIO,
                    .clock = WIND_2_CLOCK_GPIO,
