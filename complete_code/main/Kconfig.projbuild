@@ -2,13 +2,13 @@ menu "Homestation"
 
     config WIFI_SSID
         string "Wi-Fi SSID"
-        default "Iphone_van_marit"
+        default "naam"
         help
             SSID van het Wi-Fi-netwerk waarop de ESP32 moet aanmelden.
 
     config WIFI_PASSWORD
         string "Wi-Fi password"
-        default "hoi hoi hoi"
+        default "wachtwoord"
         help
             Wachtwoord van het Wi-Fi-netwerk. Laat leeg voor een open netwerk.
 
